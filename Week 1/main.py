@@ -10,13 +10,11 @@ def do_nothing(x):
 def initialize_camera(camera_index=0):
     cap = cv2.VideoCapture(camera_index)
 
-    # Check if the cam is opened correctly
     if not cap.isOpened():
         print("Error: Could not open camera.")
         return None
 
     return cap
-
 
 
 
@@ -29,19 +27,20 @@ def process_frame(frame, brightness, sharpening, edge_detection, box_blur):
 
 
 def main():
-    # Initialize the camera
     cap = initialize_camera()
     if cap is None:
         sys.exit(1)
 
     print("Camera feed started. Press 'q' to quit.")
     cv2.namedWindow('Original Frame')
+    # Creating track-bars for image processing
     cv2.createTrackbar('Brightness', 'Original Frame', 50, 100, do_nothing)
     cv2.createTrackbar('Sharpening', 'Original Frame', 0, 1, do_nothing)
     cv2.createTrackbar('Edge detection', 'Original Frame', 0, 1, do_nothing)
     cv2.createTrackbar('Box blur', 'Original Frame', 0, 1, do_nothing)
     cv2.resizeWindow('Original Frame', 1200, 900)
 
+    # Defining image processing kernels
     sharpening_kernel = np.array([[ 0, -1, 0],
                                 [-1, 5, -1],
                                 [0, -1, 0]])
@@ -59,23 +58,24 @@ def main():
                                 [0, 0, 0]])
 
     while True:
-        # Capture frame-by-frame
         ret, frame = cap.read()
 
-        # Check if frame is captured successfully
         if not ret:
             print("Error: Can't receive frame from camera.")
             break
 
-        # Process the frame with a chosen (set) of functions
+        # Get current value of the track-bar
         brightness = cv2.getTrackbarPos('Brightness', 'Original Frame')
         apply_sharpening = cv2.getTrackbarPos('Sharpening', 'Original Frame')
         apply_edge_detection = cv2.getTrackbarPos('Edge detection', 'Original Frame')
         apply_blur = cv2.getTrackbarPos('Box blur', 'Original Frame')
 
+
         sharpening = sharpening_kernel if apply_sharpening else identity_kernel
         edge_detection = edge_detection_kernel if apply_edge_detection else identity_kernel
         box_blur = box_blur_kernel if apply_blur else identity_kernel
+
+        # Process the current frame
         output_frame = process_frame(frame, brightness, sharpening, edge_detection, box_blur)
 
         # Display the original frame
@@ -84,12 +84,9 @@ def main():
         # Display the processed frame
         cv2.imshow('Processed Frame', output_frame)
 
-        # Check for 'q' key press to quit the application
-        # waitKey(1) returns -1 if no key is pressed
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    # Clean up
     cap.release()
     cv2.destroyAllWindows()
 
