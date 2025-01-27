@@ -17,7 +17,7 @@ def initialize_camera(camera_index=0):
     return cap
 
 
-
+# Convolves the image processing kernels with the current frame and adjusts brightness.
 def process_frame(frame, brightness, sharpening, edge_detection, box_blur):
     frame = cv2.filter2D(frame, -1, sharpening)
     frame = cv2.filter2D(frame, -1, edge_detection)
@@ -70,7 +70,7 @@ def main():
         apply_edge_detection = cv2.getTrackbarPos('Edge detection', 'Original Frame')
         apply_blur = cv2.getTrackbarPos('Box blur', 'Original Frame')
 
-
+        # Apply the kernels depending on track-bar values
         sharpening = sharpening_kernel if apply_sharpening else identity_kernel
         edge_detection = edge_detection_kernel if apply_edge_detection else identity_kernel
         box_blur = box_blur_kernel if apply_blur else identity_kernel
