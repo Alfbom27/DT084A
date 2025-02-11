@@ -56,11 +56,11 @@ def feature_matching(frame, saved_frame, settings):
     keypoints1, descriptors1 = orb.detectAndCompute(frame_gray, None)
     keypoints2, descriptors2 = orb.detectAndCompute(saved_gray, None)
 
-    # Brute force matching. Uses crossCheck, to ensure bidirectional matching of keypoints
+    # Brute force matching. Uses crosschecking, to ensure bidirectional matching of keypoints
     bf_matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
     feature_matches = bf_matcher.match(descriptors1, descriptors2)
 
-    # Sort features, best to worst
+    # Sort features based on distance, shortest to longest, i.e. best to worst
     feature_matches = sorted(feature_matches, key=lambda x: x.distance)
 
     # Stores the matched keypoint positions of the first 30 matches of both the source and destination image in two arrays
@@ -75,15 +75,17 @@ def feature_matching(frame, saved_frame, settings):
     if settings["ransac"]:
         if len(source_points) >= 4 and len(destination_points) >= 4:
             if settings["transformation_type"] == "homography":
-                h_matrix, mask = cv2.findHomography(source_points, destination_points, cv2.RANSAC)
+                # Homography between the set of keypoints, 3x3 matrix
+                h_matrix, mask = cv2.findHomography(source_points, destination_points, method=cv2.RANSAC)
                 good_matches = [feature_matches[i] for i in range(len(mask)) if mask[i] == 1]
             elif settings["transformation_type"] == "affine":
+                # Affine transformation between the set of keypoints, 2x3 matrix
                 a_matrix, mask = cv2.estimateAffine2D(source_points, destination_points, method=cv2.RANSAC)
                 good_matches = [feature_matches[i] for i in range(len(mask)) if mask[i] == 1]
 
+    # Draw matches between the frame and the save framed in the concatenated frame
     cv2.drawMatches(frame, keypoints1, saved_frame, keypoints2, good_matches, combined_image, flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
     return combined_image
-
 
 
 
@@ -97,7 +99,7 @@ def switch_program(key):
     elif key == ord('3'):
         return 3
 
-
+# Display program information and settings in text
 def display_text(frame, program, settings):
     menu_text = "[1] High pass filter\n[2] Feature detection\n[3] Feature matching\n[Q] Exit"
     lines = menu_text.split("\n")
@@ -127,7 +129,7 @@ def display_text(frame, program, settings):
 
 
 
-
+# New program setup
 def init_program(program):
     cv2.namedWindow('Original Frame')
     if program == 1:
@@ -145,6 +147,7 @@ def main():
     print("Camera feed started. Press 'q' to quit.")
 
     saved_frame = None
+    # Configuration settings
     settings = {
         "ransac": False,
         "display_fps": False,
@@ -156,6 +159,7 @@ def main():
             print("Error: Can't receive frame from camera.")
             break
 
+        # Process frame depending on the program
         if program == 0:
             display_text(frame, program, settings)
             cv2.imshow('Original Frame', frame)
@@ -177,15 +181,15 @@ def main():
 
 
         key_press = cv2.waitKey(1) & 0xFF
-        if key_press == ord('q'):
+        if key_press == ord('q'):   # Quit program
             break
-        elif key_press == ord('c'):
+        elif key_press == ord('c'): # Capture frame in feature matching mode
             if program == 3:
                 saved_frame = frame.copy()
-        elif key_press == ord('r'):
+        elif key_press == ord('r'): # Switch to RANSAC in feature matching mode
             if program == 3:
                 settings["ransac"] = not settings["ransac"]
-        elif key_press == ord('s'):
+        elif key_press == ord('s'): # Switch transformation type for using RANSAC
             if program == 3:
                 if settings["transformation_type"] == "homography":
                     settings["transformation_type"] = "affine"
